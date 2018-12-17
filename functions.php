@@ -138,3 +138,39 @@ if ( (isset($_GET['action']) && $_GET['action'] != 'logout') || (isset($_POST['l
 }
 
 // END ENQUEUE PARENT ACTION
+
+function jfw_user_can_access_course() {
+	$has_access = false;
+	$product_courses = get_post_meta( get_the_ID(), '_related_course', true );
+	if ( empty( $product_courses ) || empty( $product_courses[0] ) ) {
+		return $has_access;
+	}
+
+	foreach ( (array) $product_courses as $course ) {
+		$has_access = sfwd_lms_has_access( $course, get_current_user_id() );
+		if ( false === $has_access ) {
+			break;
+		}
+	}
+
+	return $has_access;
+}
+
+function jfw_maybe_remove_cart_link( $link_html ) {
+	if ( jfw_user_can_access_course() ) {
+		return '';
+	}
+
+	return $link_html;
+}
+add_filter( 'woocommerce_loop_add_to_cart_link', 'jfw_maybe_remove_cart_link' );
+
+function jfw_get_course_link() {
+	$url = get_the_permalink();
+	$product_courses = get_post_meta( get_the_ID(), '_related_course', true );
+	if ( ! empty( (array) $product_courses[0] ) ) {
+		$url = get_the_permalink( $product_courses[0] );
+	}
+
+	return $url;
+}
